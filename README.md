@@ -1,4 +1,4 @@
-# 
+# IDMR
 This repo contains the code base for Iterative Distributed Multinomial Regression with examples of how to run it.
 ###
 This article introduces an iterative estimator for the multinomial logistic regression model that is both asymptotically efficient and fast to compute
