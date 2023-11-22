@@ -1,6 +1,6 @@
 # IDMR
 This repo contains the code base for Iterative Distributed Multinomial Regression with examples of how to run it.
-###
+### Abstract
 This article introduces an iterative estimator for the multinomial logistic regression model that is both asymptotically efficient and fast to compute
 even when the number of choices is large. In many economic applications such as text analysis and spatial choice models, the number of discrete choices 
 can be large. Solving for the maximum likelihood estimator via traditional optimiza- tion algorithms, such as Newton-Raphson, is infeasible because the
