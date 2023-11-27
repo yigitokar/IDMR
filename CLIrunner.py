@@ -59,9 +59,9 @@ if estimator == 'ours':
 
             PARALLEL_mdl = MDR_v9(textData_obj= data_)
 
-            PARALLEL_normalized_theta_hat, PARALLEL_theta_hat = PARALLEL_mdl.fit(num_epochs= num_epochs,
-                                                                                 initial_mu = initial_mu,
-                                                                                 verbose = False)
+            # PARALLEL_normalized_theta_hat, PARALLEL_theta_hat = PARALLEL_mdl.fit(num_epochs= num_epochs,
+            #                                                                      initial_mu = initial_mu,
+            #                                                                      verbose = False)
 
             try:
                 start = time.time()
@@ -85,9 +85,9 @@ if estimator == 'ours':
 
             PARALLEL_mdl = MDR_v9(textData_obj= data_)
 
-            PARALLEL_normalized_theta_hat, PARALLEL_theta_hat = PARALLEL_mdl.fit(num_epochs= num_epochs,
-                                                                                 initial_mu = initial_mu,
-                                                                                 verbose = False)
+            # PARALLEL_normalized_theta_hat, PARALLEL_theta_hat = PARALLEL_mdl.fit(num_epochs= num_epochs,
+            #                                                                      initial_mu = initial_mu,
+            #                                                                      verbose = False)
 
             try:
                 start = time.time()
