@@ -107,26 +107,26 @@ class MDR_v11:
 
     def PARALLEL_initialize_theta_PairwiseBinomial(self):
 
-    	print('Initializing the theta by parallel PB')
+        print('Initializing the theta by parallel PB')
 
-    	partial_pairwiseBinomial_func=functools.partial(get_theta_k_pairwiseBinomial,
-	                                                    data_ = self.data,
-	                                                    num_steps_autograd = 10000) 
+        partial_pairwiseBinomial_func = functools.partial(get_theta_k_pairwiseBinomial,
+                                                          data_ = self.data,
+                                                          num_steps_autograd = 10000)
 
-    	with concurrent.futures.ProcessPoolExecutor() as executor:
-    		results = list(executor.map(partial_pairwiseBinomial_func, self.k_grid))
-    	results_array = np.array(results).T
-    	result_matrix = np.hstack((np.zeros((self.p, 1)), results_array))
-    	#print(pd.DataFrame(result_matrix))
-    	self.theta_mat = result_matrix
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            results = list(executor.map(partial_pairwiseBinomial_func, self.k_grid))
+        results_array = np.array(results).T
+        result_matrix = np.hstack((np.zeros((self.p, 1)), results_array))
+        # print(pd.DataFrame(result_matrix))
+        self.theta_mat = result_matrix
 
-        
+
     def PARALLEL_update_mu_bar_vec(self):
         eta_mat = self.V @ self.theta_mat
         eta_mat_tensor = torch.tensor(eta_mat)
         logsumexp_vec = torch.logsumexp(eta_mat_tensor, 1).detach().numpy()
         mu_star_vec = np.log(self.m) - logsumexp_vec
-        
+
         self.mu_vec = mu_star_vec.reshape(-1,1)
         
         
@@ -325,16 +325,16 @@ class MDR_v11:
         return(self.normalized_theta,self.theta_mat)
     
     def fit_MLE(self, num_iter):
-    	mdl = nll_l_cvm(self.data)
-    	optimizer = torch.optim.AdamW(mdl.parameters(), lr=1e-3)
-    	for steps in range(num_iter):
-    		loss = mdl() 
-    		optimizer.zero_grad(set_to_none=True)
-    		loss.backward()
-    		optimizer.step()
+        mdl = nll_l_cvm(self.data)
+        optimizer = torch.optim.AdamW(mdl.parameters(), lr=1e-3)
+        for steps in range(num_iter):
+            loss = mdl() 
+            optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            optimizer.step()
 
-    	normalized_theta_hat3 = normalize(mdl.theta_layer.weight.transpose(1,0).detach().numpy())
-    	return(normalized_theta_hat3, mdl.theta_layer.weight.transpose(1,0).detach().numpy())
+        normalized_theta_hat3 = normalize(mdl.theta_layer.weight.transpose(1,0).detach().numpy())
+        return normalized_theta_hat3, mdl.theta_layer.weight.transpose(1,0).detach().numpy()
 	        
     def fit(self, num_epochs, initial_mu , verbose = False):
         '''
