@@ -47,7 +47,10 @@ sq_diff = []
 abs_diff = []
 _diff = []
 time_list = []
-random_start_seed = np.random.randint(10000, size = 1)
+
+#random_start_seed = np.random.randint(10000, size = 1)
+random_start_seed = seed
+
 
 if estimator == 'ours':
     for b in range(B):
