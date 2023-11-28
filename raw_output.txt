@@ -1,0 +1,58 @@
+Generating data from MNL model..
+Initializing the theta by parallel PB
+One parallel iteration, Finished in 3.18 second(s)
+One parallel iteration, Finished in 3.14 second(s)
+One parallel iteration, Finished in 3.14 second(s)
+One parallel iteration, Finished in 3.15 second(s)
+One parallel iteration, Finished in 3.19 second(s)
+time spent in 1 Bootstrap sample, (DGP model='mixture') :  21.257408142089844
+Generating data from MNL model..
+Initializing the theta by parallel PB
+One parallel iteration, Finished in 3.18 second(s)
+One parallel iteration, Finished in 3.15 second(s)
+One parallel iteration, Finished in 3.13 second(s)
+One parallel iteration, Finished in 3.15 second(s)
+One parallel iteration, Finished in 3.16 second(s)
+time spent in 1 Bootstrap sample, (DGP model='mixture') :  21.203675985336304
+Generating data from MNL model..
+Initializing the theta by parallel PB
+One parallel iteration, Finished in 3.13 second(s)
+One parallel iteration, Finished in 3.15 second(s)
+One parallel iteration, Finished in 3.15 second(s)
+One parallel iteration, Finished in 3.15 second(s)
+One parallel iteration, Finished in 3.13 second(s)
+time spent in 1 Bootstrap sample, (DGP model='mixture') :  21.06161117553711
+Generating data from MNL model..
+Initializing the theta by parallel PB
+One parallel iteration, Finished in 3.16 second(s)
+One parallel iteration, Finished in 3.16 second(s)
+One parallel iteration, Finished in 3.14 second(s)
+One parallel iteration, Finished in 3.12 second(s)
+One parallel iteration, Finished in 3.15 second(s)
+time spent in 1 Bootstrap sample, (DGP model='mixture') :  21.054445028305054
+Generating data from MNL model..
+Initializing the theta by parallel PB
+One parallel iteration, Finished in 3.14 second(s)
+One parallel iteration, Finished in 3.15 second(s)
+One parallel iteration, Finished in 3.13 second(s)
+One parallel iteration, Finished in 3.16 second(s)
+One parallel iteration, Finished in 3.14 second(s)
+time spent in 1 Bootstrap sample, (DGP model='mixture') :  21.027379989624023
+hyperparameters : 
+  
+seed :  [6421] 
+n :  100 
+d :  3 
+p :  5 
+model :  MNL 
+seed_theta :  1233 
+num_epochs :  5 
+initial_mu :  None 
+B :  5 
+Estimator :  PBinit
+number of estimations B :  5
+average (over parameters) Error Square : 0.005066981
+average (over parameters) Error : 0.0028335352
+average (over parameters) Variance : 0.0032184121497997
+average (over parameters) absolute difference : 0.044153105
+average time : 21.027379989624023

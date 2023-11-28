@@ -7,6 +7,7 @@ import statsmodels.api as sm
 import plotly.graph_objects as go
 import cvxpy as cvx
 import scipy
+import os
 import ot as ot
 import multiprocessing as mp
 import time
@@ -101,7 +102,7 @@ if __name__ == "__main__":
                     normalized_theta_hat, theta_hat = PB_mdl.PARALLEL_PairwiseBinomial_fit(num_epochs , verbose = False)
                     end = time.time()
                     time_took = end - start
-                    print("time spent in 1 Bootstrap sample, (DGP model='mixture') ",time_took)
+                    print("time spent in 1 Bootstrap sample, (DGP model='mixture') : ",time_took)
                 except:
                     print("Oops!", sys.exc_info()[0], "occurred.")
                     print("Skipping this seed.")
@@ -131,4 +132,4 @@ if __name__ == "__main__":
     print("average (over parameters) Error : "  + str(np.asarray(_diff,  dtype=np.float32).mean()))
     print("average (over parameters) Variance : "  + str(get_variance_from_b_idx_theta_list(b_idx_theta_list)))
     print("average (over parameters) absolute difference : " + str(np.asarray(abs_diff, dtype=np.float32).mean()))
-    print("average time " + str(np.mean(time_took)))
+    print("average time : " + str(np.mean(time_took)))
