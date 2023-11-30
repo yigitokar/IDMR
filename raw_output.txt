@@ -1,58 +1,58 @@
 Generating data from MNL model..
 Initializing the theta by parallel PB
-One parallel iteration, Finished in 3.18 second(s)
-One parallel iteration, Finished in 3.14 second(s)
-One parallel iteration, Finished in 3.14 second(s)
-One parallel iteration, Finished in 3.15 second(s)
-One parallel iteration, Finished in 3.19 second(s)
-time spent in 1 Bootstrap sample, (DGP model='mixture') :  21.257408142089844
+One parallel iteration, Finished in 6.1 second(s)
+One parallel iteration, Finished in 4.93 second(s)
+One parallel iteration, Finished in 4.92 second(s)
+One parallel iteration, Finished in 4.95 second(s)
+One parallel iteration, Finished in 4.85 second(s)
+time spent in 1 Bootstrap sample, (DGP model='mixture') :  1077.0078189373016
 Generating data from MNL model..
 Initializing the theta by parallel PB
-One parallel iteration, Finished in 3.18 second(s)
-One parallel iteration, Finished in 3.15 second(s)
-One parallel iteration, Finished in 3.13 second(s)
-One parallel iteration, Finished in 3.15 second(s)
-One parallel iteration, Finished in 3.16 second(s)
-time spent in 1 Bootstrap sample, (DGP model='mixture') :  21.203675985336304
+One parallel iteration, Finished in 5.03 second(s)
+One parallel iteration, Finished in 5.16 second(s)
+One parallel iteration, Finished in 5.1 second(s)
+One parallel iteration, Finished in 5.11 second(s)
+One parallel iteration, Finished in 4.82 second(s)
+time spent in 1 Bootstrap sample, (DGP model='mixture') :  1076.5841767787933
 Generating data from MNL model..
 Initializing the theta by parallel PB
-One parallel iteration, Finished in 3.13 second(s)
-One parallel iteration, Finished in 3.15 second(s)
-One parallel iteration, Finished in 3.15 second(s)
-One parallel iteration, Finished in 3.15 second(s)
-One parallel iteration, Finished in 3.13 second(s)
-time spent in 1 Bootstrap sample, (DGP model='mixture') :  21.06161117553711
+One parallel iteration, Finished in 5.89 second(s)
+One parallel iteration, Finished in 5.07 second(s)
+One parallel iteration, Finished in 4.88 second(s)
+One parallel iteration, Finished in 4.63 second(s)
+One parallel iteration, Finished in 4.71 second(s)
+time spent in 1 Bootstrap sample, (DGP model='mixture') :  1076.3650269508362
 Generating data from MNL model..
 Initializing the theta by parallel PB
-One parallel iteration, Finished in 3.16 second(s)
-One parallel iteration, Finished in 3.16 second(s)
-One parallel iteration, Finished in 3.14 second(s)
-One parallel iteration, Finished in 3.12 second(s)
-One parallel iteration, Finished in 3.15 second(s)
-time spent in 1 Bootstrap sample, (DGP model='mixture') :  21.054445028305054
+One parallel iteration, Finished in 5.9 second(s)
+One parallel iteration, Finished in 4.96 second(s)
+One parallel iteration, Finished in 4.75 second(s)
+One parallel iteration, Finished in 5.58 second(s)
+One parallel iteration, Finished in 4.64 second(s)
+time spent in 1 Bootstrap sample, (DGP model='mixture') :  1077.0786950588226
 Generating data from MNL model..
 Initializing the theta by parallel PB
-One parallel iteration, Finished in 3.14 second(s)
-One parallel iteration, Finished in 3.15 second(s)
-One parallel iteration, Finished in 3.13 second(s)
-One parallel iteration, Finished in 3.16 second(s)
-One parallel iteration, Finished in 3.14 second(s)
-time spent in 1 Bootstrap sample, (DGP model='mixture') :  21.027379989624023
+One parallel iteration, Finished in 5.59 second(s)
+One parallel iteration, Finished in 4.65 second(s)
+One parallel iteration, Finished in 5.27 second(s)
+One parallel iteration, Finished in 4.95 second(s)
+One parallel iteration, Finished in 5.52 second(s)
+time spent in 1 Bootstrap sample, (DGP model='mixture') :  1079.8759009838104
 hyperparameters : 
   
-seed :  [6421] 
-n :  100 
-d :  3 
+seed :  [6606] 
+n :  2000 
+d :  50 
 p :  5 
 model :  MNL 
 seed_theta :  1233 
 num_epochs :  5 
-initial_mu :  None 
+initial_mu :  logm 
 B :  5 
 Estimator :  PBinit
 number of estimations B :  5
-average (over parameters) Error Square : 0.005066981
-average (over parameters) Error : 0.0028335352
-average (over parameters) Variance : 0.0032184121497997
-average (over parameters) absolute difference : 0.044153105
-average time : 21.027379989624023
+average (over parameters) Error Square : 0.010276068
+average (over parameters) Error : -0.031492196
+average (over parameters) Variance : 0.006282143980015467
+average (over parameters) absolute difference : 0.07783973
+average time : 1079.8759009838104

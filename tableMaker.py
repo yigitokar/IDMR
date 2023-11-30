@@ -28,36 +28,12 @@ def parse_output(file_path):
 
     return error_square_values, average_time_values
 
-def tuples_to_latex(tuples, headers):
-    # headers = ['n', 'd', 'time', 'MSE'] pick from these
-    # Convert the list of tuples into a DataFrame
-    df = pd.DataFrame(tuples, columns=headers)
+def PB_CLIrunner_wrapper_table2(n,d,estimator):
+    params['n'] = n
+    params['d'] = d
 
-    # Convert the DataFrame to a LaTeX table
-    latex_table = df.to_latex(index=False, header=True)
-
-    return latex_table
-
-# Initialize
-result_list = []
-headers = ['MSE', 'time']
-
-
-# set hyper params
-params = dict(seed=5,
-              n=100, 
-              d=3,
-              p=5,
-              model="MNL",
-              theta_seed=1233,
-              num_epochs=5,
-              init_mu=None,
-              B=5,
-              estimator="PBinit")
-
-
-# call PB-CLI runner 
-os.system('python PB-CLIrunner.py '    +
+    if estimator == 'PBinit':
+        os.system('python PB-CLIrunner.py '    +
          str(params['seed'])         + ' ' + \
          str(params['n'])            + ' ' + \
          str(params['d'])            + ' ' + \
@@ -69,16 +45,87 @@ os.system('python PB-CLIrunner.py '    +
          str(params['B'])            + ' ' + \
          str(params['estimator'])    + ' ' + \
              ' > raw_output.txt'  )
+    
+    else:
+        os.system('python CLIrunner.py '    +
+         str(params['seed'])         + ' ' + \
+         str(params['n'])            + ' ' + \
+         str(params['d'])            + ' ' + \
+         str(params['p'])            + ' ' + \
+         str(params['model'])        + ' ' + \
+         str(params['theta_seed'])   + ' ' + \
+         str(params['num_epochs'])   + ' ' + \
+         str(params['init_mu'])      + ' ' + \
+         str(params['B'])            + ' ' + \
+         str(params['estimator'])    + ' ' + \
+             ' > raw_output.txt'  )
+        
 
-# append to result list
-result_list.append(parse_output('raw_output.txt'))
+params = dict(seed=5,
+              n=None, 
+              d=None,
+              p=5,
+              model="MNL",
+              theta_seed=1233,
+              num_epochs=5,
+              init_mu="logm",
+              B=5,
+              estimator="PBinit")
 
-# set hyper params
-# call CLI runner 
-# append to result list
+# Initialize
 
+result_list = []
+headers = ['MSE', 'time']
 
+n_list = [100,300,500,700,1000,1500,2000]
+d_list = [3,5,20,50]
+
+estimator = 'PBinit'
+
+#Compute table entries
+for n in n_list:
+    print('table column :', n)
+    for d in d_list:
+        print('table row :', d)
+        PB_CLIrunner_wrapper_table2(n,d,estimator) # set hyper params, calls PB-CLIrunner.py, prints to raw_output.txt
+        result_list.append(parse_output('raw_output.txt')) # parse it from raw_outputappend to result list
 
 
 # Convert to Latex table 
-latex_table = tuples_to_latex(result_list, headers)
+
+def create_data_dict(n_list, d_list, result_list):
+    data_dict = {}
+    result_index = 0
+
+    for n in n_list:
+        for d in d_list:
+            # Ensure there is no index out of range error
+            if result_index < len(result_list):
+                data_dict[(n, d)] = result_list[result_index]
+                result_index += 1
+            else:
+                break
+
+    return data_dict
+
+data_dict = create_data_dict(n_list, d_list, result_list)
+
+def create_latex_table(data, n_list, d_list):
+    # Initialize a dictionary to store data
+    data_dict = {d: {} for d in d_list}
+
+    # Populate the dictionary with your data
+    for (n, d), (mse, runtime) in data.items():
+        data_dict[d][n] = f"({mse}, {runtime})"
+
+    # Convert the dictionary to a DataFrame
+    df = pd.DataFrame.from_dict(data_dict, orient='index', columns=n_list)
+
+    # Convert the DataFrame to a LaTeX table
+    latex_table = df.to_latex(escape=False)
+
+    return latex_table
+
+latex_table = create_latex_table(data_dict, n_list, d_list)
+
+print(latex_table)
