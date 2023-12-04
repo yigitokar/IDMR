@@ -117,16 +117,16 @@ params = dict(seed=5,
 result_list = []
 headers = ['MSE', 'bias', 'time']
 
-n_list = [500, 1000, 2000]
-d_list = [10, 15, 20, 50, 60, 80, 100, 200]
+n_list = [500, 1000, 1500, 2000, 4000, 6000, 8000, 10000]
+d_list = [10, 20, 50]
 
 estimator = 'PBinit'
 
 #Compute table entries
-for d in d_list:
-    print('table column :', d)
-    for n in n_list:
-        print('table row :', n)
+for n in n_list:
+    print('table column :', n)
+    for d in d_list:
+        print('table row :', d)
         PB_CLIrunner_wrapper_table2(n,d,estimator) # set hyper params, calls PB-CLIrunner.py, prints to raw_output.txt
         result_list.append(parse_output('raw_output.txt')) # parse it from raw_output append to result list
 

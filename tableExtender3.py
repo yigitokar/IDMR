@@ -102,12 +102,12 @@ def create_data_dict(n_list, d_list, result_list):
 
 
 
-# Initialize
+# Initialize hyper params burdan 3 farkli model vercen
 params = dict(seed=5,
               n=None, 
               d=None,
               p=5,
-              model="MNL",
+              model="Po",
               theta_seed=1233,
               num_epochs=5,
               init_mu="logm",
@@ -117,8 +117,8 @@ params = dict(seed=5,
 result_list = []
 headers = ['MSE', 'bias', 'time']
 
-n_list = [500, 1000, 2000]
-d_list = [10, 15, 20, 50, 60, 80, 100, 200]
+n_list = [500, 1000]
+d_list = [20, 50]
 
 estimator = 'PBinit'
 

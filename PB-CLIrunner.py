@@ -129,7 +129,7 @@ if __name__ == "__main__":
 
     print('number of estimations B : ', B)
     print("average (over parameters) Error Square : "  + str(np.asarray(sq_diff,  dtype=np.float32).mean()))
-    print("average (over parameters) Error : "  + str(np.asarray(_diff,  dtype=np.float32).mean()))
+    print("average (over parameters) bias : "  + str(np.asarray(_diff,  dtype=np.float32).mean()))
     print("average (over parameters) Variance : "  + str(get_variance_from_b_idx_theta_list(b_idx_theta_list)))
     print("average (over parameters) absolute difference : " + str(np.asarray(abs_diff, dtype=np.float32).mean()))
     print("average time : " + str(np.mean(time_took)))
