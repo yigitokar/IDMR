@@ -66,8 +66,6 @@ model = MDR_v11(data)
 2. Fit the model:
 
 ```python
-#For MLE estimation
-normalized_theta, theta = model.fit(num_epochs=10, initial_mu='zero')
 #For IDMR with Pairwise Binomial initialization
 normalized_theta, theta = model.PARALLEL_PairwiseBinomial_fit(num_epochs=10)
 ```
