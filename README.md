@@ -23,8 +23,8 @@ This repository implements the iterative distributed computing estimator describ
 Clone this repository:
 
 ```bash
-git clone 
-cd
+git clone https://github.com/yigitokar/IDMR.git
+cd IDMR
  ```
 
 ### Dependencies
