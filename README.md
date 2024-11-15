@@ -22,9 +22,10 @@ This repository implements the iterative distributed computing estimator describ
 
 Clone this repository:
 
-bash
+```bash
 git clone 
-cd 
+cd
+ ```
 
 ### Dependencies
 
@@ -37,9 +38,9 @@ For MOSEK solver support (optional but recommended):
 1. Obtain a MOSEK license
 2. Set the license path in your environment:
 
-bash
+```bash
 export MOSEK_LICENSE_FILE="/path/to/mosek.lic"
-
+```
 ## Usage
 
 ### Basic Simulation
@@ -52,30 +53,30 @@ To use your own dataset:
 
 1. Create a `textData` object with your data:
 
-python
+```python
 from classesv2 import textData
-C: count matrix (n x d)
-V: covariate matrix (n x p)
-m: total counts vector (n)
+#C: count matrix (n x d)
+#V: covariate matrix (n x p)
+#m: total counts vector (n)
 data = textData(C, V, m)
 Initialize model
 model = MDR_v11(data)
-
+```
 2. Fit the model:
 
-python
-For MLE estimation
+```python
+#For MLE estimation
 normalized_theta, theta = model.fit(num_epochs=10, initial_mu='zero')
-For Pairwise Binomial initialization
+#For IDMR with Pairwise Binomial initialization
 normalized_theta, theta = model.PARALLEL_PairwiseBinomial_fit(num_epochs=10)
-
+```
 ### Optimizer Settings
 
 You can modify optimizer settings in several ways:
 
 1. For CVXPY-based optimization (in `PB.py`):
 
-python
+```python
 scs_opts = {
 'max_iters': 2500, # Maximum iterations
 'eps': 1e-3, # Convergence tolerance
@@ -84,7 +85,7 @@ scs_opts = {
 'normalize': True, # Normalization setting
 'rho_x': 1e-3 # Regularization parameter
 }
-
+```
 
 2. For Newton-Raphson optimization, modify parameters in `fit_NewtonRaphson` method:
 
