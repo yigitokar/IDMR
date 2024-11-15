@@ -31,8 +31,9 @@ cd IDMR
 
 Install required packages:
 
+```bash
 pip install numpy pandas matplotlib torch tqdm statsmodels plotly cvxpy scipy
-
+```
 
 For MOSEK solver support (optional but recommended):
 1. Obtain a MOSEK license
