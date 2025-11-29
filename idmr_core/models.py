@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import time
+from time import perf_counter
 from dataclasses import dataclass
 from typing import List, Literal, Optional
 
@@ -19,17 +19,17 @@ except ImportError:  # pragma: no cover - will be raised if deps missing at runt
 @dataclass
 class IDCConfig:
     init: Literal["pairwise", "taddy", "poisson"] = "pairwise"
-    initial_mu: Optional[Literal["zero", "logm"]] = None  # only used for taddy/poisson
+    initial_mu: Optional[Literal["zero", "logm"]] = None  # TODO: wire explicitly; legacy engine infers from init
     S: int = 10
     tol: float = 0.0
     parallel_by_choice: bool = True
-    n_workers: Optional[int] = None  # placeholder; MDR_v11 currently uses defaults
+    n_workers: Optional[int] = None  # TODO: not yet forwarded to MDR_v11 executor
     store_path: bool = False
     # Placeholders for future extensions
-    penalty: Literal["none", "l1"] = "none"
-    lambda_: float = 0.0
-    poisson_solver: Literal["cvxpy_scs", "cvxpy_mosek"] = "cvxpy_scs"
-    device: Literal["cpu", "cuda"] = "cpu"
+    penalty: Literal["none", "l1"] = "none"  # TODO: not wired
+    lambda_: float = 0.0  # TODO: not wired
+    poisson_solver: Literal["cvxpy_scs", "cvxpy_mosek"] = "cvxpy_scs"  # TODO: not wired
+    device: Literal["cpu", "cuda"] = "cpu"  # TODO: not wired
 
 
 @dataclass
@@ -81,8 +81,8 @@ class IDCEstimator:
         engine = MDR_v11(textData_obj=td)
         self._engine = engine
 
-        t0 = time.time()
-        init_start = time.time()
+        t0 = perf_counter()
+        init_start = perf_counter()
 
         if cfg.init == "pairwise":
             engine.PARALLEL_initialize_theta_PairwiseBinomial()
@@ -95,7 +95,7 @@ class IDCEstimator:
         else:
             raise ValueError(f"Unknown init method: {cfg.init}")
 
-        init_time = time.time() - init_start
+        init_time = perf_counter() - init_start
 
         theta_path: List[np.ndarray] = []
         if cfg.store_path:
@@ -123,7 +123,7 @@ class IDCEstimator:
         theta_norm = normalize(theta)
         mu = engine.mu_vec.copy()
 
-        t_total = time.time() - t0
+        t_total = perf_counter() - t0
         stats = IDCStats(
             S_effective=S_eff,
             time_total=t_total,

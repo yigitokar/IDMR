@@ -23,6 +23,9 @@ def simulate_dgp(cfg: DGPConfig) -> tuple[TextData, np.ndarray]:
     Minimal placeholder simulation for DGP-A/B/C.
     Currently implements a simple Gaussian design (DGP-A style); extend as needed.
     """
+    if cfg.name != "A":
+        raise NotImplementedError(f"DGP-{cfg.name} not implemented in simulate_dgp placeholder.")
+
     rng = np.random.default_rng(cfg.seed)
     V = rng.normal(size=(cfg.n, cfg.p))
     theta_true = rng.normal(size=(cfg.p, cfg.d))

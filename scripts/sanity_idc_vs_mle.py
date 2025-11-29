@@ -33,7 +33,7 @@ def main():
     # Compare normalized parameters
     rmse = np.linalg.norm(idc_res.theta_normalized - mle_norm) / np.sqrt(mle_norm.size)
     print(f"IDC vs MLE normalized theta RMSE: {rmse:.4f}")
-    assert rmse < 0.3, "Sanity check failed: IDC and MLE differ more than tolerance."
+    assert rmse < 0.1, "Sanity check failed: IDC and MLE differ more than tolerance."
     print("Sanity check passed.")
 
 
