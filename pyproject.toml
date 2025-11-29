@@ -1,0 +1,34 @@
+[project]
+name = "idmr"
+version = "0.1.0"
+description = "Iterative Distributed Multinomial Regression experiments and estimators"
+readme = "README.md"
+requires-python = ">=3.9,<3.12"
+dependencies = [
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "torch",
+    "tqdm",
+    "statsmodels",
+    "plotly",
+    "cvxpy",
+    "scipy",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ipykernel",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["idmr_core"]
+
+[tool.uv]
+dev-dependencies = [
+    "ipykernel",
+]
