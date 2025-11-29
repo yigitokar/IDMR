@@ -42,6 +42,31 @@ For MOSEK solver support (optional but recommended):
 ```bash
 export MOSEK_LICENSE_FILE="/path/to/mosek.lic"
 ```
+
+## Quickstart (core API)
+
+Run a small synthetic fit using the new core wrapper:
+
+```bash
+UV_CACHE_DIR=.uv-cache uv run python - <<'PY'
+from idmr_core.simulation import DGPConfig, simulate_dgp
+from idmr_core.models import IDCConfig, IDCEstimator
+
+cfg = DGPConfig(name="A", n=200, d=10, p=5, M_range=(20, 30), seed=0)
+data, _ = simulate_dgp(cfg)
+
+est = IDCEstimator(IDCConfig(init="pairwise", S=5))
+res = est.fit(data.C, data.V, data.M)
+print("theta_normalized shape:", res.theta_normalized.shape)
+print("time_total (s):", res.stats.time_total)
+PY
+```
+
+Sanity check vs. MLE on a toy problem:
+
+```bash
+UV_CACHE_DIR=.uv-cache uv run python scripts/sanity_idc_vs_mle.py
+```
 ## Usage
 
 ### Basic Simulation
@@ -100,4 +125,3 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## Citation
 
 If you use this code in your research, please cite:
-

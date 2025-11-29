@@ -22,8 +22,8 @@ class nll_l_cvm(nn.Module):
 
     def __init__(self, data_):
         super().__init__()
-        self.C = torch.from_numpy(data_.C) #(n,d)
-        self.V = torch.from_numpy(data_.V) #(n,p)
+        self.C = torch.from_numpy(data_.C).to(torch.float64) #(n,d)
+        self.V = torch.from_numpy(data_.V).to(torch.float64) #(n,p)
         self.m = torch.from_numpy(data_.m).to(torch.float64) #(m,)
         
         self.n = self.C.shape[0]

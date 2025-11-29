@@ -19,6 +19,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+AGENTS.md
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -36,6 +37,7 @@ wheels/
 env/
 venv/
 ENV/
+.uv-cache/
 
 # Misc
 .DS_Store
