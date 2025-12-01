@@ -31,4 +31,5 @@ packages = ["idmr_core"]
 [tool.uv]
 dev-dependencies = [
     "ipykernel",
+    "pytest",
 ]
