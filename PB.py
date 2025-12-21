@@ -27,13 +27,25 @@ def get_subdata(data_, k):
     subdata_ = textData(C_sub,V_sub,M_sub)
     return(subdata_)
 
-def nll_l_cvm_cvx(C, V, m, verbose = False, solver = 'SCS'):
-    
+def nll_l_cvm_cvx(C, V, m, verbose=False, solver='SCS', lambda_=0.0):
+    """Multinomial logistic regression via CVXPY with optional L1 penalty.
+
+    Args:
+        C: Count matrix (n, d)
+        V: Covariate matrix (n, p)
+        m: Total counts per observation (n,)
+        verbose: Print solver output
+        solver: CVXPY solver
+        lambda_: L1 regularization strength (default 0.0 = no regularization)
+
+    Returns:
+        theta: Estimated parameters, shape (p, d)
+    """
     n = C.shape[0]
     d = C.shape[1]
     p = V.shape[1]
-    
-    theta_layer = cvx.Variable((p,d), nonneg=False) # p, d
+
+    theta_layer = cvx.Variable((p, d), nonneg=False)  # p, d
     eta_mat = V @ theta_layer  # (n, d)
 
     # Sum over the rows
@@ -45,31 +57,49 @@ def nll_l_cvm_cvx(C, V, m, verbose = False, solver = 'SCS'):
     q1 = m @ lse_eta_vec
     q2 = cvx.sum(cvx.diag(C @ eta_mat.T))
 
-    loss = q1 - q2
-        
-    problem = cvx.Problem(cvx.Minimize(loss))
+    nll_loss = q1 - q2
+
+    # Add L1 penalty if lambda_ > 0
+    if lambda_ > 0:
+        l1_penalty = lambda_ * cvx.norm1(theta_layer)
+        objective = nll_loss + l1_penalty
+    else:
+        objective = nll_loss
+
+    problem = cvx.Problem(cvx.Minimize(objective))
     scs_opts = {
-    'max_iters': 2500,    # Default max iterations
-    'eps': 1e-3,         # Default tolerance/precision
-    'alpha': 1.5,        # Default relaxation parameter
-    'scale': 1.0,        # Default scaling
-    'normalize': True,    # Default normalization setting
-    'rho_x': 1e-3        # Default regularization parameter
-}
+        'max_iters': 2500,
+        'eps': 1e-3,
+        'alpha': 1.5,
+        'scale': 1.0,
+        'normalize': True,
+        'rho_x': 1e-3
+    }
     problem.solve(verbose=verbose, solver=cvx.SCS, **scs_opts)
-    #print(theta_layer.value)
-    return(theta_layer.value)
+    return theta_layer.value
 
 
-def get_theta_k_pairwiseBinomial(k, data_ ):
-    #print('yeni fonksiyona giriyor')
+def get_theta_k_pairwiseBinomial(k, data_, lambda_=0.0):
+    """Pairwise binomial initialization for choice k with optional L1 penalty.
+
+    Args:
+        k: Choice index
+        data_: textData object
+        lambda_: L1 regularization strength (default 0.0 = no regularization)
+
+    Returns:
+        theta_k: Estimated parameters for choice k, shape (p,)
+    """
     subdata_ = get_subdata(data_, k)
-    
-    theta_hat_mle_cvx_SUB = nll_l_cvm_cvx(subdata_.C, subdata_.V, subdata_.m, verbose = False, solver = 'MOSEK')
-    theta_hat_mle_cvx_SUB[0,1] = -1*theta_hat_mle_cvx_SUB[0,0]
-    theta_hat_mle_cvx_SUB[0,0] = 0
-    
-    return(theta_hat_mle_cvx_SUB[:,1])
+
+    theta_hat_mle_cvx_SUB = nll_l_cvm_cvx(
+        subdata_.C, subdata_.V, subdata_.m,
+        verbose=False, solver='MOSEK', lambda_=lambda_
+    )
+    theta_hat_mle_cvx_SUB[0, 1] = -1 * theta_hat_mle_cvx_SUB[0, 0]
+    theta_hat_mle_cvx_SUB[0, 0] = 0
+
+    return theta_hat_mle_cvx_SUB[:, 1]
 
 
 # partial_pairwiseBinomial_func_cvx=functools.partial(get_theta_k_pairwiseBinomial_cvx,
@@ -77,10 +107,16 @@ def get_theta_k_pairwiseBinomial(k, data_ ):
 
 
 class MDR_v11:
-    def __init__(self, textData_obj):
+    def __init__(self, textData_obj, lambda_=0.0):
+        """Initialize MDR_v11 estimator.
+
+        Args:
+            textData_obj: textData object containing C, V, m
+            lambda_: L1 regularization strength (default 0.0 = no regularization)
+        """
         # get data from textData object
         self.data = textData_obj
-        self.C= textData_obj.C
+        self.C = textData_obj.C
         self.V = textData_obj.V
         self.m = textData_obj.m
         # put the dimensions as attributes so that I dont have to
@@ -89,34 +125,40 @@ class MDR_v11:
         self.p = self.V.shape[1]
         self.d = self.C.shape[1]
 
-        self.k_grid = list(np.arange(1,self.d))	
-        
-        self.mu_vec = np.zeros((self.n,1))
+        self.k_grid = list(np.arange(1, self.d))
+
+        self.mu_vec = np.zeros((self.n, 1))
+
+        # L1 regularization strength
+        self.lambda_ = lambda_
         
     def initialize(self):
-        if self.initial_mu == 'zero': 
-            self.mu_vec = np.zeros((self.n,1))
-            self.mu_vec_cvx = cvx.Parameter((self.n,1),nonneg=False)
+        if self.initial_mu == 'zero':
+            self.mu_vec = np.zeros((self.n, 1))
+            self.mu_vec_cvx = cvx.Parameter((self.n, 1), nonneg=False)
             self.mu_vec_cvx.value = self.mu_vec
-            
+
             self.theta_mat = np.zeros((self.p, self.d))
             # compute the likelihood with mu = zeros and theta_hat_mat = poisson cvx
-            self.theta_mat = fit_nlcv_with_cvx_v8(self.C,self.V,mu_vec = self.mu_vec)
-            
-            
+            self.theta_mat = fit_nlcv_with_cvx_v8(
+                self.C, self.V, mu_vec=self.mu_vec, lambda_=self.lambda_
+            )
+
             # We expect a lower nll when we do iteration...
 
         elif self.initial_mu == 'logm':
-            
+
             self.mu_vec = np.log(self.m)
-           
-            self.mu_vec_cvx = cvx.Parameter((self.n,1),nonneg=False)
-            self.mu_vec_cvx.value = self.mu_vec.reshape(-1,1)
+
+            self.mu_vec_cvx = cvx.Parameter((self.n, 1), nonneg=False)
+            self.mu_vec_cvx.value = self.mu_vec.reshape(-1, 1)
             self.theta_mat = np.zeros((self.p, self.d))
-            
+
             # compute the likelihood with mu = zeros and theta_hat_mat = poisson cvx
-            self.theta_mat = fit_nlcv_with_cvx_v8(self.C,self.V,mu_vec = self.mu_vec)
-            
+            self.theta_mat = fit_nlcv_with_cvx_v8(
+                self.C, self.V, mu_vec=self.mu_vec, lambda_=self.lambda_
+            )
+
         else:
             return('Error: No such start as ' + str(self.initial_mu)) 
         
@@ -138,18 +180,20 @@ class MDR_v11:
 
         print('Initializing the theta by parallel PB')
         start = time.time()
-        partial_pairwiseBinomial_func = functools.partial(get_theta_k_pairwiseBinomial,
-                                                          data_ = self.data)
+        partial_pairwiseBinomial_func = functools.partial(
+            get_theta_k_pairwiseBinomial,
+            data_=self.data,
+            lambda_=self.lambda_
+        )
 
         with concurrent.futures.ProcessPoolExecutor() as executor:
             results = list(executor.map(partial_pairwiseBinomial_func, self.k_grid))
         results_array = np.array(results).T
         result_matrix = np.hstack((np.zeros((self.p, 1)), results_array))
-        # print(pd.DataFrame(result_matrix))
         self.theta_mat = result_matrix
         end = time.time()
         time_took = end - start
-        print("time spent in 1 PB initialing : ",time_took)
+        print("time spent in 1 PB initialing : ", time_took)
 
 
     def PARALLEL_update_mu_bar_vec(self):
@@ -198,29 +242,30 @@ class MDR_v11:
 
         start = time.perf_counter()
         words = list(np.arange(self.d))
-        # Because I am using map methor of executor object,
+        # Because I am using map method of executor object,
         # the context manager below is equivalent to parallel
         # minimization of Q_kn
         with concurrent.futures.ProcessPoolExecutor() as executor:
 
-            Cell_minQ_k=functools.partial(CELL_minQ_kn,
-                                          C=self.C,
-                                          V=self.V,
-                                          mu_vec=self.mu_vec,
-                                          verbose = False,
-                                          solver = 'SCS') # prod_x has only one argument x (y is fixed to 10)
+            Cell_minQ_k = functools.partial(
+                CELL_minQ_kn,
+                C=self.C,
+                V=self.V,
+                mu_vec=self.mu_vec,
+                verbose=False,
+                solver='SCS',
+                lambda_=self.lambda_
+            )
 
             result_list = executor.map(Cell_minQ_k, words)
 
-
         finish = time.perf_counter()
-        #print(f'One parallel iteration, Finished in {round(finish-start, 2)} second(s)')
 
         thtList = []
         for i in result_list:
-               thtList.append(i)
-                
-        self.theta_mat = np.reshape(np.ravel(thtList), (self.p, self.d), order = 'F')       
+            thtList.append(i)
+
+        self.theta_mat = np.reshape(np.ravel(thtList), (self.p, self.d), order='F')       
         
     def PARALLEL_oneRun(self):
         ''' takes mu_vec^0 and theta_mat^0 --> updates parameters as 
@@ -328,14 +373,17 @@ class MDR_v11:
         self.mu_vec_cvx.value = self.mu_vec.reshape(-1,1)
 
     def update_theta_bar_mat(self):
-        #updates theta_matrix given mu(takes from the object attribute)
-        '''Dimensions should be as follows:
+        """Update theta matrix given mu (takes from the object attribute).
+
+        Dimensions should be as follows:
         self.C = n,d
         self.V = n,p
         self.m = (n,)
         self.mu_vec = (n,)
-        '''    
-        self.theta_mat = fit_nlcv_with_cvx_v8(self.C,self.V,mu_vec = self.mu_vec)
+        """
+        self.theta_mat = fit_nlcv_with_cvx_v8(
+            self.C, self.V, mu_vec=self.mu_vec, lambda_=self.lambda_
+        )
     
     def oneRun(self): 
         ''' takes mu_vec^0 and theta_mat^0 --> updates parameters as 

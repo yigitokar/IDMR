@@ -1,5 +1,66 @@
 # To-Do List
-October 24, 2025
+October 24, 2025 (Original)
+**Last Updated: December 21, 2025**
+
+---
+
+# Implementation Status
+
+## ✅ COMPLETED
+
+| Item | Description | Date |
+|------|-------------|------|
+| **Codebase Refactor** | Created `idmr_core` module with clean API wrapping legacy `MDR_v11` | Nov 2024 |
+| **SGDEstimator** | Implemented SGD comparison (Adam, SGD, Adagrad optimizers) | Nov 2024 |
+| **L1 Regularization** | Added L1 penalty to all optimization steps (init + iterations) | Dec 2024 |
+| **Test Suite** | 32 tests passing (DGP, IDC, SGD, L1, paper reproduction) | Dec 2024 |
+| **Refactor Verification** | Verified old code = new code (identical MSE) | Dec 2024 |
+
+## 🔄 READY TO RUN
+
+All code is implemented. Just need to run experiments and collect results.
+
+---
+
+# Quick Start (When You Return)
+
+```bash
+# 1. Verify everything still works
+UV_CACHE_DIR=.uv-cache uv run pytest tests/ -v
+
+# 2. Verify refactor (old code = new code)
+UV_CACHE_DIR=.uv-cache uv run python scripts/verify_refactor.py
+```
+
+## How to Use the New API
+
+```python
+from idmr_core import (
+    IDCEstimator, IDCConfig,
+    SGDEstimator, SGDConfig,
+    DGPConfig, simulate_dgp
+)
+
+# Generate data
+cfg = DGPConfig(name="A", n=1000, d=250, p=5, M_range=(200, 300), seed=42)
+data, theta_true = simulate_dgp(cfg)
+
+# Table I: Large-d IDC
+idc = IDCEstimator(IDCConfig(init="pairwise", S=10))
+result = idc.fit(data.C, data.V, data.M)
+
+# Table II: SGD comparison
+sgd = SGDEstimator(SGDConfig(optimizer="adam", lr=0.01, epochs=1000))
+result = sgd.fit(data.C, data.V, data.M)
+
+# Table III: Regularized IDC
+idc_l1 = IDCEstimator(IDCConfig(init="pairwise", S=10, penalty="l1", lambda_=0.1))
+result = idc_l1.fit(data.C, data.V, data.M)
+```
+
+---
+
+# Referee Comments (Original)
 
 Based on the referee report, we need to conduct more simulation study and include an empirical analysis. Here are all the related comments.
 
@@ -11,11 +72,22 @@ Based on the referee report, we need to conduct more simulation study and includ
 
 It might be beneficial to introduce additional bias to reduce variance, such as using shrinkage estimation. While focusing on the computational challenges of traditional MLE is acceptable, it is also important to point out issues related to the large dimensionality of the parameter space. I am not suggesting to reconsider a robust estimator in this context, but I think the authors might want to discuss it somewhere in the paper. By the way, should cases like `d x n` or `d ≫ n` be explicitly ruled out? (By the first comment of the co-editor, we do not need to provide any theoretical result.)
 
-# 1 Simulation
+---
 
-We need additional simulation designs.
+# Simulation Experiments to Run
 
-1.  Increase `d`. We may need to let `d = 250, 500, 1000, 2000, 5000`. We can keep `p` unchanged in this design. We do not need to include MLE for these large values of `d` (maybe still do MLE when `d = 250`). We do not need to repeat five hundred times. I suggest that **we try ten repetitions first**. If the result is good and we have time, we can try fifty. **We fix n to be 1000**. The pattern for different `n` has been studied in the paper. **For both DGPs, we may increase M to accommodate large d**. For example, **we can let M to draw from a discrete uniform distribution [200, 300]**. Here are the tables that we can present after this simulation exercise. One referee asks about the optimal choice of the steps, `S`. I need to think about how to reply to that and explain this well in the paper. But since we naturally have `θ^(s)` for each step, we can first store all the values (MSE and time) for `S = 11, 12, 13, . . ., 20` and then decide what to report. We can also use stopping criteria such as `||θ^(s+1) – θ^(s)|| < ε`.
+## Table I: Large-d IDC Performance
+
+**Status: Code ready, need to run**
+
+Parameters:
+- `n = 1000` (fixed)
+- `d ∈ {250, 500, 1000, 2000, 5000}`
+- `p = 5` (unchanged)
+- `M ∈ [200, 300]` (uniform)
+- `S ∈ {10, 20}` (store all intermediate values S=11,...,20)
+- `B = 10` repetitions first, then 50 if time permits
+- DGP: A and C
 
 | DGP | S  | d = 250 (MSE,Time) | d = 500 (MSE,Time) | d = 1000 (MSE,Time) | d = 2000 (MSE,Time) | d = 5000 (MSE,Time) |
 | :-- | :-- | :------------------- | :------------------- | :-------------------- | :-------------------- | :-------------------- |
@@ -24,32 +96,38 @@ We need additional simulation designs.
 | C   | 10 |                    |                    |                     |                     |                     |
 |     | 20 |                    |                    |                     |                     |                     |
 
-Table I: Finite sample performance of IDC estimator with large `d`
+## Table II: SGD Comparison
 
-2.  Include other stochastic gradient descent methods. We can apply the SGD to DGP-A and obtain the a table like the following. Set `n = 1000`. Let `M1` and `M2` be two of the many possible stochastic gradient descent methods. We can add more if there are more commonly used ones. SGD usually requires tuning parameters (denoted as `κ`). We want to show that the result of SGD can be sensitive to the tuning parameters. That is why for each SGD, we may try different values of tuning parameters. We shall then do the same thing for DGP-C, where some probabilities are close or very close to zero.
+**Status: Code ready, need to run**
+
+SGD methods implemented:
+- `M1 = Adam` (common default)
+- `M2 = SGD` (vanilla)
+- `M3 = Adagrad` (adaptive)
+
+Tuning parameters (κ = learning rate):
+- lr ∈ {0.001, 0.01, 0.1}
 
 | DGP | SGD | κ | d = 250 (MSE,Time) | d = 500 (MSE,Time) | d = 1000 (MSE,Time) | d = 2000 (MSE,Time) | d = 5000 (MSE,Time) |
 | :-- | :-- | :- | :------------------- | :------------------- | :-------------------- | :-------------------- | :-------------------- |
-| A   | M1  | X | (XX,XX)            | (XX,XX)            | (XX,XX)             | (XX,XX)             | (XX,XX)             |
-|     |     | X |                    |                    |                     |                     |                     |
-|     |     | X |                    |                    |                     |                     |                     |
-|     | M2  | X |                    |                    |                     |                     |                     |
-|     |     | X |                    |                    |                     |                     |                     |
-|     |     | X |                    |                    |                     |                     |                     |
-| C   | M1  | X |                    |                    |                     |                     |                     |
-|     |     | X |                    |                    |                     |                     |                     |
-|     |     | X |                    |                    |                     |                     |                     |
-|     | M2  | X |                    |                    |                     |                     |                     |
-|     |     | X |                    |                    |                     |                     |                     |
-|     |     | X |                    |                    |                     |                     |                     |
+| A   | Adam  | 0.001 | (XX,XX)            | (XX,XX)            | (XX,XX)             | (XX,XX)             | (XX,XX)             |
+|     |       | 0.01  |                    |                    |                     |                     |                     |
+|     |       | 0.1   |                    |                    |                     |                     |                     |
+|     | SGD   | 0.001 |                    |                    |                     |                     |                     |
+|     |       | 0.01  |                    |                    |                     |                     |                     |
+|     |       | 0.1   |                    |                    |                     |                     |                     |
+| C   | Adam  | 0.001 |                    |                    |                     |                     |                     |
+|     |       | ...   |                    |                    |                     |                     |                     |
 
-Table II: Finite sample performance of SGD with large `d`
+## Table III: Regularized IDC (L1)
 
-3.  Adding a regularization term. Let `λ ∈ ℝ` be the tuning parameter. The general form of the regularization term is expressed as
+**Status: Code ready, need to run**
 
-    $L (\lambda) = \sum_{k=1}^{d-1}(\lambda \theta_{k,1} + ... + \lambda|\theta_{k,p}|)$
-
-    We keep `λ` the same across iterations and keep the current iteration procedure. That is, we add `L (λ)` to the objective function in the initial estimation and all the iteration steps. Everything else stays the same. In the end, we want a table like this.
+Parameters:
+- `n = 1000`
+- `p ∈ {50, 100, 500, 1000, 2000}`
+- `d ∈ {200, 250, 500, 1000, 2000}`
+- `λ` (regularization strength) - need to determine reasonable values
 
 | n = 1000 | p = 50 (MSE,Time) | p = 100 (MSE,Time) | p = 500 (MSE,Time) | p = 1000 (MSE,Time) | p = 2000 (MSE,Time) |
 | :------- | :------------------ | :------------------- | :------------------- | :-------------------- | :-------------------- |
@@ -60,12 +138,43 @@ Table II: Finite sample performance of SGD with large `d`
 | 1000     |                     |                      |                      |                       |                       |
 | 2000     |                     |                      |                      |                       |                       |
 
-Table III: Finite sample performance of IDC estimator as `p` and `d` change
+---
 
-## 1.1 Computational Resource
+# Computational Resources
 
-To make the simulation faster, we may need extra computational power. I can use my research fund to pay for more CPU instances.
+To make the simulation faster, we may need extra computational power. Research fund available for CPU instances (AWS or similar).
 
-# 2 Empirical Analysis
+**Strategy:**
+- Test locally with small d (250-500) first
+- Scale to AWS cluster for d ≥ 1000
+- Parallelize across (DGP, d, method) combinations
+
+---
+
+# Empirical Analysis (Yelp)
 
 Once the simulation, especially Part 3 where a regularization term is added, is done, we can use the data in Taddy to conduct the empirical analysis. Depending on the result of Part 3, we can use the original setup or reduce `d` and `p`.
+
+Yelp dataset: `n = 215,879`, `d = 13,938`, `p = 11,940`
+
+---
+
+# File Structure Reference
+
+```
+IDMR/
+├── idmr_core/           # NEW clean API
+│   ├── __init__.py      # Exports: IDCEstimator, SGDEstimator, etc.
+│   ├── models.py        # IDCEstimator, SGDEstimator, configs
+│   ├── simulation.py    # DGP-A, DGP-C generators
+│   └── data.py          # TextData wrapper
+├── classesv2.py         # Legacy engine (CELL_minQ_kn, etc.)
+├── PB.py                # Legacy MDR_v11 class
+├── tests/
+│   └── test_idmr_core.py  # 32 tests
+├── scripts/
+│   ├── verify_refactor.py   # Compare old vs new code
+│   └── sanity_idc_vs_mle.py # IDC vs MLE comparison
+└── notes/
+    └── IDC_To do list (1).md  # This file
+```

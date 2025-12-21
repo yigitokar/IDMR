@@ -55,22 +55,40 @@ def MSE_thetas(thetaTRUE_mat, theta_mat):
     result = ((thetaTRUE_mat - theta_mat)**2).mean()
     return(result)
 
-def CELL_minQ_kn(k,C, V, mu_vec, verbose = False, solver = 'SCS'):
-    
+def CELL_minQ_kn(k, C, V, mu_vec, verbose=False, solver='SCS', lambda_=0.0):
+    """Per-choice Poisson regression with optional L1 penalty.
+
+    Args:
+        k: Choice index
+        C: Count matrix (n, d)
+        V: Covariate matrix (n, p)
+        mu_vec: Offset vector (n, 1)
+        verbose: Print solver output
+        solver: CVXPY solver ('SCS' or 'MOSEK')
+        lambda_: L1 regularization strength (default 0.0 = no regularization)
+
+    Returns:
+        theta_vec_k: Estimated parameters for choice k, shape (p, 1)
+    """
     n = C.shape[0]
     d = C.shape[1]
     p = V.shape[1]
-    
-    theta_vec_k = cvx.Variable((p,1), nonneg=False)
-    q1 = cvx.exp(V @ theta_vec_k + mu_vec)
-    q2 = cvx.multiply(C[:,k].reshape(-1,1) , (V @ theta_vec_k + mu_vec) )
-    o_ = cvx.sum(q1 - q2 )
 
-    objective =  o_
-        
+    theta_vec_k = cvx.Variable((p, 1), nonneg=False)
+    q1 = cvx.exp(V @ theta_vec_k + mu_vec)
+    q2 = cvx.multiply(C[:, k].reshape(-1, 1), (V @ theta_vec_k + mu_vec))
+    poisson_loss = cvx.sum(q1 - q2)
+
+    # Add L1 penalty if lambda_ > 0
+    if lambda_ > 0:
+        l1_penalty = lambda_ * cvx.norm1(theta_vec_k)
+        objective = poisson_loss + l1_penalty
+    else:
+        objective = poisson_loss
+
     problem = cvx.Problem(cvx.Minimize(objective))
     problem.solve(verbose=False, solver=cvx.SCS)
-    return(theta_vec_k.value)
+    return theta_vec_k.value
     
     
 
@@ -78,34 +96,47 @@ def do_something(seconds):
     time.sleep(1)
     print(seconds)
 
-def fit_nlcv_with_cvx_v8(C, V, mu_vec, verbose = False, solver = 'MOSEK'):
-    '''C is a column matrix, V, m are np arrays, mu_vec is a np array in this version.'''
-    # Bu fonksiyonu MDRv7'nin icine koy!
+def fit_nlcv_with_cvx_v8(C, V, mu_vec, verbose=False, solver='MOSEK', lambda_=0.0):
+    """Full matrix Poisson regression with optional L1 penalty.
+
+    Args:
+        C: Count matrix (n, d)
+        V: Covariate matrix (n, p)
+        mu_vec: Offset vector (n,) or (n, 1)
+        verbose: Print solver output
+        solver: CVXPY solver ('MOSEK' or 'SCS')
+        lambda_: L1 regularization strength (default 0.0 = no regularization)
+
+    Returns:
+        theta_mat: Estimated parameters, shape (p, d)
+    """
     solver = 'MOSEK'
     verbose = False
     n = C.shape[0]
     d = C.shape[1]
     p = V.shape[1]
 
-    mu_vec_mat = mu_vec.reshape((-1,1)) @  np.ones((1,d)) # repeats mu d times
+    mu_vec_mat = mu_vec.reshape((-1, 1)) @ np.ones((1, d))  # repeats mu d times
 
-    mu_vec_mat_cvx= cvx.Parameter((n,d),nonneg=False)
+    mu_vec_mat_cvx = cvx.Parameter((n, d), nonneg=False)
     mu_vec_mat_cvx.value = mu_vec_mat
 
-    theta_mat = cvx.Variable((p,d), nonneg=False)
-    # theta_mat.value = thetaTRUE_mat ###### computes correct lcv, checked manually.
+    theta_mat = cvx.Variable((p, d), nonneg=False)
 
     q1 = cvx.exp(V @ theta_mat + mu_vec_mat)
-    q2 = cvx.multiply(C , (V @ theta_mat + mu_vec_mat) )
-    o_ = cvx.sum(q1 - q2 )
+    q2 = cvx.multiply(C, (V @ theta_mat + mu_vec_mat))
+    poisson_loss = cvx.sum(q1 - q2)
 
-    objective =  o_
-    
-    #constraints = [theta_mat[:,0] == 0]
-    
+    # Add L1 penalty if lambda_ > 0
+    if lambda_ > 0:
+        l1_penalty = lambda_ * cvx.norm1(theta_mat)
+        objective = poisson_loss + l1_penalty
+    else:
+        objective = poisson_loss
+
     problem = cvx.Problem(cvx.Minimize(objective))
     problem.solve(verbose=verbose, solver=cvx.MOSEK)
-    return(theta_mat.value)
+    return theta_mat.value
 
 
 def normalize(theta):

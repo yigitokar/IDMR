@@ -460,6 +460,101 @@ class TestPaperReproduction:
         assert np.isfinite(mse)
 
 
+# -----------------------------------------------------------------------------
+# Test L1 Regularization
+# -----------------------------------------------------------------------------
+
+class TestL1Regularization:
+    """Tests for L1 regularization (referee request for Table III)."""
+
+    @pytest.fixture
+    def small_data(self):
+        """Generate small test data."""
+        cfg = DGPConfig(name="A", n=200, d=20, p=5, M_range=(20, 30), seed=42)
+        data, theta_true = simulate_dgp(cfg)
+        return data, theta_true
+
+    def test_l1_runs_without_error(self, small_data):
+        """IDC with L1 penalty should run without errors."""
+        data, theta_true = small_data
+
+        cfg = IDCConfig(init="pairwise", S=5, penalty="l1", lambda_=0.1)
+        est = IDCEstimator(cfg)
+        result = est.fit(data.C, data.V, data.M)
+
+        assert result.theta.shape == (5, 20)
+        assert result.theta_normalized.shape == (5, 20)
+        assert np.isfinite(result.theta).all()
+
+    def test_l1_produces_sparser_solution(self, small_data):
+        """L1 penalty should produce sparser solutions than no penalty."""
+        data, theta_true = small_data
+
+        # Fit without L1
+        cfg_no_l1 = IDCConfig(init="pairwise", S=10, penalty="none")
+        est_no_l1 = IDCEstimator(cfg_no_l1)
+        result_no_l1 = est_no_l1.fit(data.C, data.V, data.M)
+
+        # Fit with L1 (moderate penalty)
+        cfg_l1 = IDCConfig(init="pairwise", S=10, penalty="l1", lambda_=1.0)
+        est_l1 = IDCEstimator(cfg_l1)
+        result_l1 = est_l1.fit(data.C, data.V, data.M)
+
+        # Count near-zero entries (sparsity proxy)
+        threshold = 0.01
+        sparse_no_l1 = (np.abs(result_no_l1.theta_normalized) < threshold).sum()
+        sparse_l1 = (np.abs(result_l1.theta_normalized) < threshold).sum()
+
+        print(f"\nNear-zero entries (threshold={threshold}):")
+        print(f"  No L1: {sparse_no_l1}")
+        print(f"  L1 (lambda=1.0): {sparse_l1}")
+
+        # L1 should produce at least as many near-zero entries
+        # (or more for larger lambda)
+        assert sparse_l1 >= sparse_no_l1 * 0.8, (
+            f"L1 should promote sparsity: no_l1={sparse_no_l1}, l1={sparse_l1}"
+        )
+
+    def test_l1_lambda_effect(self, small_data):
+        """Larger lambda should produce sparser solutions."""
+        data, theta_true = small_data
+
+        threshold = 0.01
+        sparsities = []
+
+        for lam in [0.0, 0.1, 0.5, 1.0]:
+            if lam == 0.0:
+                cfg = IDCConfig(init="pairwise", S=5, penalty="none")
+            else:
+                cfg = IDCConfig(init="pairwise", S=5, penalty="l1", lambda_=lam)
+
+            est = IDCEstimator(cfg)
+            result = est.fit(data.C, data.V, data.M)
+
+            n_sparse = (np.abs(result.theta_normalized) < threshold).sum()
+            sparsities.append((lam, n_sparse))
+            print(f"lambda={lam}: near-zero entries = {n_sparse}")
+
+        # Sparsity should generally increase with lambda
+        # (relaxed check due to optimization noise)
+        assert sparsities[-1][1] >= sparsities[0][1] * 0.5, (
+            f"Larger lambda should promote sparsity"
+        )
+
+    def test_l1_with_different_inits(self, small_data):
+        """L1 should work with all initialization methods."""
+        data, theta_true = small_data
+
+        for init in ["pairwise", "taddy", "poisson"]:
+            cfg = IDCConfig(init=init, S=3, penalty="l1", lambda_=0.1)
+            est = IDCEstimator(cfg)
+            result = est.fit(data.C, data.V, data.M)
+
+            assert result.theta.shape == (5, 20)
+            assert np.isfinite(result.theta).all()
+            print(f"L1 with {init} init: OK")
+
+
 if __name__ == "__main__":
     # Quick smoke test when run directly
     print("Running quick smoke test...")

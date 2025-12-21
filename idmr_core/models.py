@@ -69,9 +69,10 @@ class IDCConfig:
     parallel_by_choice: bool = True
     n_workers: Optional[int] = None  # TODO: not yet forwarded to MDR_v11 executor
     store_path: bool = False
+    # L1 regularization
+    penalty: Literal["none", "l1"] = "none"
+    lambda_: float = 0.0  # L1 regularization strength (only used when penalty="l1")
     # Placeholders for future extensions
-    penalty: Literal["none", "l1"] = "none"  # TODO: not wired
-    lambda_: float = 0.0  # TODO: not wired
     poisson_solver: Literal["cvxpy_scs", "cvxpy_mosek"] = "cvxpy_scs"  # TODO: not wired
     device: Literal["cpu", "cuda"] = "cpu"  # TODO: not wired
 
@@ -122,7 +123,11 @@ class IDCEstimator:
         M = np.asarray(M if M is not None else C.sum(axis=1), dtype=np.float64)
 
         td = textData(C, V, M)  # reuse existing data wrapper to match engine expectations
-        engine = MDR_v11(textData_obj=td)
+
+        # Determine L1 regularization strength
+        lambda_val = cfg.lambda_ if cfg.penalty == "l1" else 0.0
+
+        engine = MDR_v11(textData_obj=td, lambda_=lambda_val)
         self._engine = engine
 
         t0 = perf_counter()
