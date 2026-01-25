@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from time import perf_counter
+import os
 from dataclasses import dataclass
 from typing import List, Literal, Optional
 
@@ -69,11 +70,12 @@ class IDCConfig:
     parallel_by_choice: bool = True
     n_workers: Optional[int] = None  # TODO: not yet forwarded to MDR_v11 executor
     store_path: bool = False
+    log_eta: bool = False  # log max(V @ theta + mu) each IDC iteration
     # L1 regularization
     penalty: Literal["none", "l1"] = "none"
     lambda_: float = 0.0  # L1 regularization strength (only used when penalty="l1")
     # Placeholders for future extensions
-    poisson_solver: Literal["cvxpy_scs", "cvxpy_mosek"] = "cvxpy_scs"  # TODO: not wired
+    poisson_solver: Literal["cvxpy_scs", "cvxpy_mosek", "cvxpy_clarabel"] = "cvxpy_scs"  # TODO: not wired
     device: Literal["cpu", "cuda"] = "cpu"  # TODO: not wired
 
 
@@ -113,9 +115,54 @@ class IDCEstimator:
                 "dependencies are installed (numpy, torch, cvxpy, etc.)."
             )
 
+    def _apply_thread_caps(self) -> None:
+        if not self.config.parallel_by_choice:
+            return
+        # Cap BLAS/OpenMP threads to avoid oversubscription in multiprocess runs.
+        cap = "1"
+        for var in (
+            "OMP_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "OPENBLAS_NUM_THREADS",
+            "NUMEXPR_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+        ):
+            os.environ.setdefault(var, cap)
+        try:
+            import torch
+
+            torch.set_num_threads(1)
+            torch.set_num_interop_threads(1)
+        except Exception:
+            pass
+
+    @staticmethod
+    def _map_solver_name(solver: str) -> str:
+        name = (solver or "").strip().lower()
+        if name in {"mosek", "cvxpy_mosek"}:
+            return "MOSEK"
+        if name in {"clarabel", "cvxpy_clarabel"}:
+            return "CLARABEL"
+        return "SCS"
+
+    @staticmethod
+    def _log_eta_stats(engine: "MDR_v11", iteration: int) -> None:
+        eta = engine.V @ engine.theta_mat
+        mu = engine.mu_vec
+        if mu.ndim == 2 and mu.shape[1] == 1:
+            mu = mu.reshape(-1)
+        eta_mu = eta + mu.reshape(-1, 1)
+        max_val = np.nanmax(eta_mu)
+        min_val = np.nanmin(eta_mu)
+        print(
+            f"IDC iter {iteration}: max(V@theta+mu)={max_val:.6f}, "
+            f"min(V@theta+mu)={min_val:.6f}"
+        )
+
     def fit(self, C: np.ndarray, V: np.ndarray, M: Optional[np.ndarray] = None) -> IDCResult:
         self._ensure_engine()
         cfg = self.config
+        self._apply_thread_caps()
 
         # Ensure consistent float64 dtype for the engine (avoids legacy dtype mismatches).
         C = np.asarray(C, dtype=np.float64)
@@ -127,20 +174,34 @@ class IDCEstimator:
         # Determine L1 regularization strength
         lambda_val = cfg.lambda_ if cfg.penalty == "l1" else 0.0
 
-        engine = MDR_v11(textData_obj=td, lambda_=lambda_val)
+        engine = MDR_v11(
+            textData_obj=td,
+            lambda_=lambda_val,
+            n_workers=cfg.n_workers,
+            poisson_solver=self._map_solver_name(cfg.poisson_solver),
+        )
         self._engine = engine
 
         t0 = perf_counter()
         init_start = perf_counter()
 
         if cfg.init == "pairwise":
-            engine.PARALLEL_initialize_theta_PairwiseBinomial()
+            if cfg.parallel_by_choice:
+                engine.PARALLEL_initialize_theta_PairwiseBinomial()
+            else:
+                engine.initialize_theta_PairwiseBinomial()
         elif cfg.init == "taddy":
             engine.initial_mu = "logm"
-            engine.PARALLEL_initialize()
+            if cfg.parallel_by_choice:
+                engine.PARALLEL_initialize()
+            else:
+                engine.initialize()
         elif cfg.init == "poisson":
             engine.initial_mu = "zero"
-            engine.PARALLEL_initialize()
+            if cfg.parallel_by_choice:
+                engine.PARALLEL_initialize()
+            else:
+                engine.initialize()
         else:
             raise ValueError(f"Unknown init method: {cfg.init}")
 
@@ -154,10 +215,20 @@ class IDCEstimator:
         for s in range(1, cfg.S + 1):
             prev_theta = engine.theta_mat.copy() if cfg.tol > 0 else None
 
-            if cfg.parallel_by_choice:
-                engine.PARALLEL_oneRun()
+            if cfg.log_eta:
+                if cfg.parallel_by_choice:
+                    engine.PARALLEL_update_mu_bar_vec()
+                    self._log_eta_stats(engine, s)
+                    engine.PARALLEL_update_theta_bar_mat()
+                else:
+                    engine.update_mu_bar_vec()
+                    self._log_eta_stats(engine, s)
+                    engine.update_theta_bar_mat()
             else:
-                engine.oneRun()
+                if cfg.parallel_by_choice:
+                    engine.PARALLEL_oneRun()
+                else:
+                    engine.oneRun()
 
             S_eff = s
             if cfg.store_path:

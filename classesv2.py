@@ -55,6 +55,20 @@ def MSE_thetas(thetaTRUE_mat, theta_mat):
     result = ((thetaTRUE_mat - theta_mat)**2).mean()
     return(result)
 
+def _resolve_cvx_solver(solver):
+    if solver is None:
+        return cvx.SCS
+    if isinstance(solver, str):
+        name = solver.strip().lower()
+        if name in {"scs", "cvxpy_scs"}:
+            return cvx.SCS
+        if name in {"mosek", "cvxpy_mosek"}:
+            return cvx.MOSEK
+        if name in {"clarabel", "cvxpy_clarabel"}:
+            return getattr(cvx, "CLARABEL", "CLARABEL")
+    return solver
+
+
 def CELL_minQ_kn(k, C, V, mu_vec, verbose=False, solver='SCS', lambda_=0.0):
     """Per-choice Poisson regression with optional L1 penalty.
 
@@ -87,7 +101,8 @@ def CELL_minQ_kn(k, C, V, mu_vec, verbose=False, solver='SCS', lambda_=0.0):
         objective = poisson_loss
 
     problem = cvx.Problem(cvx.Minimize(objective))
-    problem.solve(verbose=False, solver=cvx.SCS)
+    solver_obj = _resolve_cvx_solver(solver)
+    problem.solve(verbose=verbose, solver=solver_obj)
     return theta_vec_k.value
     
     
@@ -96,7 +111,7 @@ def do_something(seconds):
     time.sleep(1)
     print(seconds)
 
-def fit_nlcv_with_cvx_v8(C, V, mu_vec, verbose=False, solver='MOSEK', lambda_=0.0):
+def fit_nlcv_with_cvx_v8(C, V, mu_vec, verbose=False, solver='SCS', lambda_=0.0):
     """Full matrix Poisson regression with optional L1 penalty.
 
     Args:
@@ -110,8 +125,6 @@ def fit_nlcv_with_cvx_v8(C, V, mu_vec, verbose=False, solver='MOSEK', lambda_=0.
     Returns:
         theta_mat: Estimated parameters, shape (p, d)
     """
-    solver = 'MOSEK'
-    verbose = False
     n = C.shape[0]
     d = C.shape[1]
     p = V.shape[1]
@@ -135,7 +148,8 @@ def fit_nlcv_with_cvx_v8(C, V, mu_vec, verbose=False, solver='MOSEK', lambda_=0.
         objective = poisson_loss
 
     problem = cvx.Problem(cvx.Minimize(objective))
-    problem.solve(verbose=verbose, solver=cvx.MOSEK)
+    solver_obj = _resolve_cvx_solver(solver)
+    problem.solve(verbose=verbose, solver=solver_obj)
     return theta_mat.value
 
 
@@ -1519,8 +1533,6 @@ def random_party_assignment_WAPP(data_, M,assignment_seed = 123):
 
     res = ot.emd2(a=a.reshape(-1), b=b.reshape(-1), M = M, numItermax=10000)/np.max(M)
     return(res, a, b)
-
-
 
 
 

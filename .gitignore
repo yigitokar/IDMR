@@ -41,3 +41,7 @@ ENV/
 
 # Misc
 .DS_Store
+
+# Experiments
+smoke_test/
+results/

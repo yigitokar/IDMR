@@ -75,11 +75,18 @@ def nll_l_cvm_cvx(C, V, m, verbose=False, solver='SCS', lambda_=0.0):
         'normalize': True,
         'rho_x': 1e-3
     }
-    problem.solve(verbose=verbose, solver=cvx.SCS, **scs_opts)
+    solver_name = str(solver).strip().lower()
+    if solver_name in {"mosek", "cvxpy_mosek"}:
+        problem.solve(verbose=verbose, solver=cvx.MOSEK)
+    elif solver_name in {"clarabel", "cvxpy_clarabel"}:
+        solver_obj = getattr(cvx, "CLARABEL", "CLARABEL")
+        problem.solve(verbose=verbose, solver=solver_obj)
+    else:
+        problem.solve(verbose=verbose, solver=cvx.SCS, **scs_opts)
     return theta_layer.value
 
 
-def get_theta_k_pairwiseBinomial(k, data_, lambda_=0.0):
+def get_theta_k_pairwiseBinomial(k, data_, lambda_=0.0, solver="SCS"):
     """Pairwise binomial initialization for choice k with optional L1 penalty.
 
     Args:
@@ -93,8 +100,12 @@ def get_theta_k_pairwiseBinomial(k, data_, lambda_=0.0):
     subdata_ = get_subdata(data_, k)
 
     theta_hat_mle_cvx_SUB = nll_l_cvm_cvx(
-        subdata_.C, subdata_.V, subdata_.m,
-        verbose=False, solver='MOSEK', lambda_=lambda_
+        subdata_.C,
+        subdata_.V,
+        subdata_.m,
+        verbose=False,
+        solver=solver,
+        lambda_=lambda_,
     )
     theta_hat_mle_cvx_SUB[0, 1] = -1 * theta_hat_mle_cvx_SUB[0, 0]
     theta_hat_mle_cvx_SUB[0, 0] = 0
@@ -107,12 +118,14 @@ def get_theta_k_pairwiseBinomial(k, data_, lambda_=0.0):
 
 
 class MDR_v11:
-    def __init__(self, textData_obj, lambda_=0.0):
+    def __init__(self, textData_obj, lambda_=0.0, n_workers=None, poisson_solver="SCS"):
         """Initialize MDR_v11 estimator.
 
         Args:
             textData_obj: textData object containing C, V, m
             lambda_: L1 regularization strength (default 0.0 = no regularization)
+            n_workers: Max number of worker processes for parallel steps
+            poisson_solver: CVXPY solver name ("SCS" or "MOSEK")
         """
         # get data from textData object
         self.data = textData_obj
@@ -128,9 +141,13 @@ class MDR_v11:
         self.k_grid = list(np.arange(1, self.d))
 
         self.mu_vec = np.zeros((self.n, 1))
+        self.mu_vec_cvx = cvx.Parameter((self.n, 1), nonneg=False)
+        self.mu_vec_cvx.value = self.mu_vec
 
         # L1 regularization strength
         self.lambda_ = lambda_
+        self.n_workers = n_workers
+        self.poisson_solver = poisson_solver
         
     def initialize(self):
         if self.initial_mu == 'zero':
@@ -141,7 +158,7 @@ class MDR_v11:
             self.theta_mat = np.zeros((self.p, self.d))
             # compute the likelihood with mu = zeros and theta_hat_mat = poisson cvx
             self.theta_mat = fit_nlcv_with_cvx_v8(
-                self.C, self.V, mu_vec=self.mu_vec, lambda_=self.lambda_
+                self.C, self.V, mu_vec=self.mu_vec, solver=self.poisson_solver, lambda_=self.lambda_
             )
 
             # We expect a lower nll when we do iteration...
@@ -156,7 +173,7 @@ class MDR_v11:
 
             # compute the likelihood with mu = zeros and theta_hat_mat = poisson cvx
             self.theta_mat = fit_nlcv_with_cvx_v8(
-                self.C, self.V, mu_vec=self.mu_vec, lambda_=self.lambda_
+                self.C, self.V, mu_vec=self.mu_vec, solver=self.poisson_solver, lambda_=self.lambda_
             )
 
         else:
@@ -183,11 +200,35 @@ class MDR_v11:
         partial_pairwiseBinomial_func = functools.partial(
             get_theta_k_pairwiseBinomial,
             data_=self.data,
-            lambda_=self.lambda_
+            lambda_=self.lambda_,
+            solver=self.poisson_solver,
         )
 
-        with concurrent.futures.ProcessPoolExecutor() as executor:
+        executor_kwargs = {}
+        if self.n_workers is not None:
+            executor_kwargs["max_workers"] = self.n_workers
+        with concurrent.futures.ProcessPoolExecutor(**executor_kwargs) as executor:
             results = list(executor.map(partial_pairwiseBinomial_func, self.k_grid))
+        results_array = np.array(results).T
+        result_matrix = np.hstack((np.zeros((self.p, 1)), results_array))
+        self.theta_mat = result_matrix
+        end = time.time()
+        time_took = end - start
+        print("time spent in 1 PB initialing : ", time_took)
+
+    def initialize_theta_PairwiseBinomial(self):
+        print('Initializing the theta by serial PB')
+        start = time.time()
+        results = []
+        for k in self.k_grid:
+            results.append(
+                get_theta_k_pairwiseBinomial(
+                    k,
+                    data_=self.data,
+                    lambda_=self.lambda_,
+                    solver=self.poisson_solver,
+                )
+            )
         results_array = np.array(results).T
         result_matrix = np.hstack((np.zeros((self.p, 1)), results_array))
         self.theta_mat = result_matrix
@@ -245,7 +286,10 @@ class MDR_v11:
         # Because I am using map method of executor object,
         # the context manager below is equivalent to parallel
         # minimization of Q_kn
-        with concurrent.futures.ProcessPoolExecutor() as executor:
+        executor_kwargs = {}
+        if self.n_workers is not None:
+            executor_kwargs["max_workers"] = self.n_workers
+        with concurrent.futures.ProcessPoolExecutor(**executor_kwargs) as executor:
 
             Cell_minQ_k = functools.partial(
                 CELL_minQ_kn,
@@ -253,8 +297,8 @@ class MDR_v11:
                 V=self.V,
                 mu_vec=self.mu_vec,
                 verbose=False,
-                solver='SCS',
-                lambda_=self.lambda_
+                solver=self.poisson_solver,
+                lambda_=self.lambda_,
             )
 
             result_list = executor.map(Cell_minQ_k, words)
@@ -370,6 +414,8 @@ class MDR_v11:
         mu_star_vec = np.log(self.m) - logsumexp_vec
         
         self.mu_vec = mu_star_vec
+        if not hasattr(self, "mu_vec_cvx"):
+            self.mu_vec_cvx = cvx.Parameter((self.n, 1), nonneg=False)
         self.mu_vec_cvx.value = self.mu_vec.reshape(-1,1)
 
     def update_theta_bar_mat(self):
@@ -382,7 +428,7 @@ class MDR_v11:
         self.mu_vec = (n,)
         """
         self.theta_mat = fit_nlcv_with_cvx_v8(
-            self.C, self.V, mu_vec=self.mu_vec, lambda_=self.lambda_
+            self.C, self.V, mu_vec=self.mu_vec, solver=self.poisson_solver, lambda_=self.lambda_
         )
     
     def oneRun(self): 
