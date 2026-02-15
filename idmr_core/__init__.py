@@ -5,7 +5,7 @@ Expose high-level estimator classes and data helpers so experiment scripts
 don't need to import the legacy CLI modules directly.
 """
 
-from .data import TextData
+from .data import TextData, load_yelp_subset
 from .models import (
     BootstrapConfig,
     BootstrapResult,
@@ -23,6 +23,7 @@ from .simulation import DGPConfig, simulate_dgp
 __all__ = [
     # Data
     "TextData",
+    "load_yelp_subset",
     # IDC Estimation
     "IDCConfig",
     "IDCResult",

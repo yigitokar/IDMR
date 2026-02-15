@@ -125,3 +125,49 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## Citation
 
 If you use this code in your research, please cite:
+
+## Yelp (Taddy DMR) Data
+
+Taddy (2013/2015) uses the Kaggle competition dump `yelp-recruiting` (Yelp Recruiting contest).
+The raw dump is not redistributed here; you need to download it yourself (Kaggle account + competition access).
+
+1. Install Kaggle CLI:
+
+```bash
+uv pip install kaggle
+```
+
+2. Put your Kaggle API token at `~/.kaggle/kaggle.json` (download from Kaggle account settings), and lock down permissions:
+
+```bash
+mkdir -p ~/.kaggle
+chmod 700 ~/.kaggle
+chmod 600 ~/.kaggle/kaggle.json
+```
+
+3. Download + unzip into this repo (defaults to `data/raw/yelp-recruiting`):
+
+```bash
+./scripts/fetch_yelp_recruiting.sh
+```
+
+4. Build Taddy-style processed artifacts (sparse `C` plus covariates) into `data/processed/yelp_taddy`:
+
+```bash
+UV_CACHE_DIR=.uv-cache uv run python scripts/process_yelp_taddy.py
+```
+
+5. (Optional) Create a small dense subset for local IDC development (outputs `C.npy`, `V.npy`, `M.npy`):
+
+```bash
+UV_CACHE_DIR=.uv-cache uv run python scripts/make_yelp_subset_for_idmr.py --n 5000 --d 2000 --covars rev,geo --add-intercept
+```
+
+6. Fit IDC on the dense subset:
+
+```bash
+UV_CACHE_DIR=.uv-cache uv run python scripts/run_idc_on_yelp_subset.py --S 1 --init pairwise --no-parallel
+```
+
+For the original DMR Yelp processing/estimation pipeline, see `https://github.com/TaddyLab/yelp` (it expects the Kaggle
+training set to be unpacked into a `data/` directory and includes `code/README.txt` with steps).

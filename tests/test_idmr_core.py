@@ -12,6 +12,7 @@ import pytest
 
 from idmr_core import (
     TextData,
+    load_yelp_subset,
     DGPConfig,
     simulate_dgp,
     IDCConfig,
@@ -239,6 +240,26 @@ class TestTextData:
 
         with pytest.raises(ValueError):
             TextData.from_arrays(C, V)
+
+
+def test_load_yelp_subset_roundtrip(tmp_path):
+    """load_yelp_subset should load C/V/M from a directory of .npy files."""
+    C = np.arange(12, dtype=np.int32).reshape(3, 4)
+    V = np.arange(15, dtype=np.float32).reshape(3, 5)
+    M = np.array([4, 4, 4], dtype=np.int32)
+
+    np.save(tmp_path / "C.npy", C)
+    np.save(tmp_path / "V.npy", V)
+    np.save(tmp_path / "M.npy", M)
+
+    data = load_yelp_subset(tmp_path)
+    assert data.C.shape == (3, 4)
+    assert data.V.shape == (3, 5)
+    assert data.M.shape == (3,)
+    # Loader upcasts to float64 because the legacy engine expects float64.
+    assert data.C.dtype == np.float64
+    assert data.V.dtype == np.float64
+    assert data.M.dtype == np.float64
 
 
 # -----------------------------------------------------------------------------

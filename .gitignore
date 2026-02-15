@@ -45,3 +45,10 @@ ENV/
 # Experiments
 smoke_test/
 results/
+
+# Data (Kaggle/Yelp dumps can be large and are typically non-redistributable)
+data/
+
+# Common local raw dumps placed at repo root
+yelp-recruiting/
+yelp-recruiting.zip

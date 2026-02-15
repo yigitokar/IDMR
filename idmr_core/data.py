@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
 
 import numpy as np
@@ -38,3 +39,32 @@ class TextData:
     @property
     def p(self) -> int:
         return self.V.shape[1]
+
+
+def load_yelp_subset(dir_path: str | Path) -> TextData:
+    """
+    Load a dense Yelp subset produced by scripts/make_yelp_subset_for_idmr.py.
+
+    Expected files in dir_path:
+      - C.npy  (n, d) counts (dense)
+      - V.npy  (n, p) covariates (dense)
+      - M.npy  (n,)   total counts
+    """
+    dpath = Path(dir_path)
+    C_path = dpath / "C.npy"
+    V_path = dpath / "V.npy"
+    M_path = dpath / "M.npy"
+
+    if not C_path.exists():
+        raise FileNotFoundError(f"Missing {C_path}")
+    if not V_path.exists():
+        raise FileNotFoundError(f"Missing {V_path}")
+    if not M_path.exists():
+        raise FileNotFoundError(f"Missing {M_path}")
+
+    # The legacy engine expects float64 arrays.
+    C = np.load(C_path).astype(np.float64, copy=False)
+    V = np.load(V_path).astype(np.float64, copy=False)
+    M = np.load(M_path).astype(np.float64, copy=False)
+
+    return TextData.from_arrays(C=C, V=V, M=M)
