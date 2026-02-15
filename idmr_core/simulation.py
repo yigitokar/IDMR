@@ -91,8 +91,10 @@ def simulate_dgp(cfg: DGPConfig) -> tuple[TextData, np.ndarray]:
 
     elif cfg.name == "C":
         # DGP-C: Mixture stress-test
-        # Covariates: V_i from mixture of N(0,1) and N(4,1)
+        # Covariates: V_i from mixture of N(0,1) and N(4,1), then standardized
+        # to prevent degenerate softmax probabilities at high M.
         V = _sample_mixture_of_normals(rng, mean1=0, std1=1, mean2=4, std2=1, size=(cfg.n, cfg.p))
+        V = (V - V.mean(axis=0)) / V.std(axis=0)
 
         # Total counts: use M_range if explicitly set, otherwise default mixture
         if cfg.M_range != (20, 30):
