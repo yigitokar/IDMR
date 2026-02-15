@@ -94,9 +94,14 @@ def simulate_dgp(cfg: DGPConfig) -> tuple[TextData, np.ndarray]:
         # Covariates: V_i from mixture of N(0,1) and N(4,1)
         V = _sample_mixture_of_normals(rng, mean1=0, std1=1, mean2=4, std2=1, size=(cfg.n, cfg.p))
 
-        # Total counts: M_i from mixture of N(10,1) and N(60,5), rounded to int
-        M_raw = _sample_mixture_of_normals(rng, mean1=10, std1=1, mean2=60, std2=5, size=cfg.n)
-        M = np.maximum(1, np.round(np.abs(M_raw)).astype(int))  # Ensure M >= 1
+        # Total counts: use M_range if explicitly set, otherwise default mixture
+        if cfg.M_range != (20, 30):
+            # Explicit M_range provided — use uniform draw (same as DGP-A)
+            M = rng.integers(cfg.M_range[0], cfg.M_range[1] + 1, size=cfg.n)
+        else:
+            # Default: M_i from mixture of N(10,1) and N(60,5), rounded to int
+            M_raw = _sample_mixture_of_normals(rng, mean1=10, std1=1, mean2=60, std2=5, size=cfg.n)
+            M = np.maximum(1, np.round(np.abs(M_raw)).astype(int))  # Ensure M >= 1
 
     else:
         raise NotImplementedError(f"DGP-{cfg.name} not implemented.")
