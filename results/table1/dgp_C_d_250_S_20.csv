@@ -1,0 +1,11 @@
+table,dgp,rep,seed,theta_seed,n,d,p,m_min,m_max,method,solver,init,S,S_effective,optimizer,lr,lambda,epochs,batch_size,device,n_workers,time_total,time_per_iter,time_per_epoch,init_time,final_loss,mse,status,error,timestamp
+1,C,0,1000,1233,1000,250,5,500,600,idc,scs,pairwise,20,20,,,,,,cpu,,,,,,,0.003041,ok,,2025-02-16
+1,C,1,1001,1233,1000,250,5,500,600,idc,scs,pairwise,20,20,,,,,,cpu,,,,,,,0.001440,ok,,2025-02-16
+1,C,2,1002,1233,1000,250,5,500,600,idc,scs,pairwise,20,20,,,,,,cpu,,,,,,,0.004002,ok,,2025-02-16
+1,C,3,1003,1233,1000,250,5,500,600,idc,scs,pairwise,20,20,,,,,,cpu,,,,,,,0.004150,ok,,2025-02-16
+1,C,4,1004,1233,1000,250,5,500,600,idc,scs,pairwise,20,20,,,,,,cpu,,,,,,,0.002846,ok,,2025-02-16
+1,C,5,1005,1233,1000,250,5,500,600,idc,scs,pairwise,20,20,,,,,,cpu,,,,,,,0.004802,ok,,2025-02-16
+1,C,6,1006,1233,1000,250,5,500,600,idc,scs,pairwise,20,20,,,,,,cpu,,,,,,,0.002941,ok,,2025-02-16
+1,C,7,1007,1233,1000,250,5,500,600,idc,scs,pairwise,20,20,,,,,,cpu,,,,,,,0.002063,ok,,2025-02-16
+1,C,8,1008,1233,1000,250,5,500,600,idc,scs,pairwise,20,20,,,,,,cpu,,,,,,,0.005001,ok,,2025-02-16
+1,C,9,1009,1233,1000,250,5,500,600,idc,scs,pairwise,20,20,,,,,,cpu,,,,,,,0.002715,ok,,2025-02-16
