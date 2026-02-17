@@ -28,6 +28,7 @@ class DGPConfig:
     M_range: Tuple[int, int] = (20, 30)
     seed: int = 1234
     theta_seed: int | None = None
+    theta_scale: float = 1.0  # Scale for theta_true ~ N(0, theta_scale^2)
 
 
 def _sample_mixture_of_normals(
@@ -79,7 +80,7 @@ def simulate_dgp(cfg: DGPConfig) -> tuple[TextData, np.ndarray]:
     theta_rng = np.random.default_rng(theta_seed)
 
     # Generate true theta (same for both DGPs)
-    theta_true = theta_rng.normal(size=(cfg.p, cfg.d))
+    theta_true = theta_rng.normal(scale=cfg.theta_scale, size=(cfg.p, cfg.d))
 
     if cfg.name == "A":
         # DGP-A: Clean baseline MNL

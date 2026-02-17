@@ -126,6 +126,7 @@ class Combo:
     epochs: Optional[int] = None
     batch_size: Optional[int] = None
     device: Optional[str] = None
+    theta_scale: float = 1.0
 
 
 def _parse_args() -> argparse.Namespace:
@@ -158,6 +159,10 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--local-output-dir", type=str, default=None)
     parser.add_argument("--output-suffix", type=str, default="")
     parser.add_argument("--no-parallel", action="store_true")
+    parser.add_argument("--theta-scale", type=float, default=None,
+                        help="Scale for theta_true ~ N(0, scale^2). Use 'inv_sqrt_p' logic via --theta-scale-inv-sqrt-p.")
+    parser.add_argument("--theta-scale-inv-sqrt-p", action="store_true",
+                        help="Set theta_scale = 1/sqrt(p) for each config (constant signal strength as p varies).")
     parser.add_argument("--log-eta", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--fail-fast", action="store_true")
@@ -315,6 +320,7 @@ def _build_combos(args: argparse.Namespace) -> List[Combo]:
                 for p in args.p:
                     for lam in args.lambda_vals:
                         for S in args.S:
+                            ts = 1.0 / np.sqrt(p) if getattr(args, 'theta_scale_inv_sqrt_p', False) else (args.theta_scale or 1.0)
                             combos.append(
                                 Combo(
                                     table=3,
@@ -327,6 +333,7 @@ def _build_combos(args: argparse.Namespace) -> List[Combo]:
                                     init=args.init,
                                     S=S,
                                     lambda_=lam,
+                                    theta_scale=ts,
                                 )
                             )
     return combos
@@ -358,6 +365,7 @@ def _run_idc(
         M_range=combo.m_range,
         seed=seed,
         theta_seed=theta_seed,
+        theta_scale=combo.theta_scale,
     )
     data, theta_true = simulate_dgp(sim_cfg)
     theta_true_norm = normalize(theta_true)
@@ -406,6 +414,7 @@ def _run_sgd(
         M_range=combo.m_range,
         seed=seed,
         theta_seed=theta_seed,
+        theta_scale=combo.theta_scale,
     )
     data, theta_true = simulate_dgp(sim_cfg)
     theta_true_norm = normalize(theta_true)
